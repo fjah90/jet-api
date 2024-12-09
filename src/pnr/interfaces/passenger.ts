@@ -1,0 +1,50 @@
+export interface Passenger {
+  orgID: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  age: number;
+  DOB: string;
+  gender: string;
+  title: string;
+  nationalityLaguageID: string;
+  relationType: string;
+  WBCID: string;
+  PTCID: string;
+  PTC: string;
+  useInventory: string;
+  company: string;
+  comments: string;
+  passport: string;
+  nationality: string;
+  profileId: string;
+  weight: string;
+  height: string;
+  redressNumber: string;
+  knownTravelerNumber: string;
+  frequentFlyerNumber: string;
+  address: {
+    address1: string;
+    address2: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    countryName: string;
+    countryCode: string;
+    areaCode: string;
+    phoneNumber: string;
+    display: string;
+  };
+  contactInfo?: {
+    contactId?: string;
+    personOrgId?: string;
+    contactField?: string;
+    contactType?: string;
+    extension?: string;
+    countryCode?: string;
+    areaCode?: string;
+    phoneNumber?: string;
+    display?: string;
+    preferredContactMethod?: string;
+  };
+}

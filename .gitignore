@@ -1,0 +1,53 @@
+*~
+.DS_Store
+.DS_Store?
+.Spotlight-V100
+.Trashes
+._*
+Icon?
+Thumbs.db
+
+*.iml
+.idea/
+
+### DO NOT MODIFY ABOVE THIS LINE ###
+
+# compiled output
+/dist
+/node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+log-request.ts
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Configuration & Credentials
+.env
+.terraform
+/**/secrets.*
+/test.yaml
+/**/Chart.lock
+/devops/helm/app/charts/*.tgz

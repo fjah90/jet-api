@@ -1,0 +1,176 @@
+clone:
+  depth: full
+definitions:
+  caches:
+    dependency-check-deps: ~/.m2/repository
+    sonar-deps: ~/.m2/repository
+  services:
+    docker:
+      memory: 2048
+  steps:
+    #
+    # Notes:
+    #   - you can clone the repo (https://bitbucket.org/avoristravel/docker-public.git at the time of writing) and run ./<script name>.sh -U to display a brief usage
+    #
+    - step:
+        name: 'anchors'
+        after-script: &notify
+          - docker-public/pipelines/google_chat_post_message.sh "${GOOGLE_CHAT_INCOMING_WEBHOOK_URL_IT_OTHER_ARCHITECTURE_N:?}" "${BITBUCKET_EXIT_CODE:?}"
+        condition: &only_run_if
+          changesets:
+            includePaths:
+              - '.forcebuild'
+              - 'Dockerfile'
+              - '**/*.js'
+              - '**/*.ts'
+              - 'packages.json'
+              - 'packages-lock.json'
+
+    - step: &prepare
+        name: 'prepare'
+        artifacts:
+          - docker-public/**
+        clone:
+          enabled: false
+        script:
+          - git clone --branch master --depth 1 ${DOCKER_PUBLIC_REPO_URL:?}
+          - docker-public/pipelines/init.sh
+
+    - step: &build
+        name: 'build'
+        artifacts:
+          - dist/**
+          - node_modules/**
+        condition: *only_run_if
+        script:
+          - docker-public/pipelines/npm_run.sh install
+          - docker-public/pipelines/npm_run.sh run build
+
+    - step: &dependency_check
+        name: 'dependency check'
+        artifacts:
+          - dependency-check-report.*
+        caches:
+          - dependency-check-deps
+        condition: *only_run_if
+        script:
+          - export ALWAYS_SUCCEED='true'
+          - docker-public/pipelines/dependency_check_cli_run.sh -e "dist/**" -e "node_modules/**" 8
+
+    - step: &deploy_to_tst
+        deployment: tst
+        name: 'deploy to tst'
+        script:
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRE:?}" iberojet "${DEPLOYBOT_PRE_IBEROJET:?}"
+          - docker-public/pipelines/chart_deploy.sh -a -t "${BITBUCKET_COMMIT:?}" backend tst node-generic
+        trigger: manual
+
+    - step: &delete_tst
+        name: 'delete tst'
+        script:
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRE:?}" iberojet "${DEPLOYBOT_PRE_IBEROJET:?}"
+          - helm uninstall tst-backend
+        trigger: manual
+
+    - step: &deploy_to_pre
+        deployment: pre
+        name: 'deploy to pre'
+        script:
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRE:?}" iberojet "${DEPLOYBOT_PRE_IBEROJET:?}"
+          - docker-public/pipelines/chart_deploy.sh -a -t "${BITBUCKET_COMMIT:?}" backend pre node-generic
+
+    - step: &deploy_to_stg
+        deployment: stg
+        name: 'deploy to stg'
+        script:
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRO:?}" iberojet "${DEPLOYBOT_PRO_IBEROJET:?}"
+          - docker-public/pipelines/chart_deploy.sh -a -t "${BITBUCKET_COMMIT:?}" backend stg node-generic
+        trigger: manual
+
+    - step: &deploy_to_pro
+        deployment: pro
+        name: 'deploy to pro'
+        script:
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRO:?}" iberojet "${DEPLOYBOT_PRO_IBEROJET:?}"
+          - docker-public/pipelines/chart_deploy.sh -a -t "${BITBUCKET_COMMIT:?}" backend pro node-generic
+        trigger: manual
+
+    - step: &docker_build_and_push
+        name: 'docker build & push'
+        after-script: *notify
+        caches:
+          - docker
+        condition: *only_run_if
+        services:
+          - docker
+        script:
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRE:?}" iberojet "${DEPLOYBOT_PRE_IBEROJET:?}"
+          - docker-public/pipelines/container_image_registry_cleanup.sh 7
+          - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRO:?}" iberojet "${DEPLOYBOT_PRO_IBEROJET:?}"
+          - docker-public/pipelines/container_image_registry_cleanup.sh 7
+          - docker-public/pipelines/container_image_build_with_custom_dockerfile.sh -t "${BITBUCKET_COMMIT:?}" Dockerfile
+          - docker-public/pipelines/container_image_push.sh -s "${BITBUCKET_COMMIT:?}" "${REGISTRY_ADDRESS_AWS_PRE:?}" iberojet unused "${PUSHBOT_AWS_PRE:?}"
+          - docker-public/pipelines/container_image_push.sh -s "${BITBUCKET_COMMIT:?}" "${REGISTRY_ADDRESS_AWS_PRO:?}" iberojet unused "${PUSHBOT_AWS_PRO:?}"
+
+    - step: &sonar_scan
+        name: 'sonar scan'
+        caches:
+          - sonar-deps
+        condition: *only_run_if
+        script:
+          - export ALWAYS_SUCCEED='true'
+          - docker-public/pipelines/sonar_scanner_cli_run.sh
+
+    - step: &test
+        name: 'test'
+        condition: *only_run_if
+        script:
+          - docker-public/pipelines/npm_run.sh run test:cov
+
+image:
+  name: b63defaultcr.azurecr.io/ci-cd-big/b-builder-node:latest22
+  username: $ACR_PULL_USERNAME
+  password: $ACR_PULL_PASSWORD
+pipelines:
+  options:
+    docker: true
+    size: 2x
+
+  branches:
+    feature/*:
+      - step: *prepare
+      - step: *build
+      # - step: *test
+      - parallel:
+          - step: *sonar_scan
+          - step: *dependency_check
+      - step: *docker_build_and_push
+      - step: *deploy_to_tst
+      - step: *delete_tst
+    master:
+      - step: *prepare
+      - step: *build
+      # - step: *test
+      - parallel:
+          - step: *sonar_scan
+          - step: *dependency_check
+      - step: *docker_build_and_push
+      - step: *deploy_to_pre
+      - step: *deploy_to_stg
+      - step: *deploy_to_pro
+
+  custom:
+    deploy_redis_pre:
+      - step: *prepare
+      - step:
+          name: 'deploy redis pre'
+          script:
+            - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRE:?}" iberojet "${DEPLOYBOT_PRE_IBEROJET:?}"
+            - docker-public/pipelines/chart_deploy.sh redis-backend pre redis
+    deploy_redis_pro:
+      - step: *prepare
+      - step:
+          name: 'deploy redis pro'
+          script:
+            - docker-public/pipelines/oc_config.sh "${API_URL_AWS_PRO:?}" iberojet "${DEPLOYBOT_PRO_IBEROJET:?}"
+            - docker-public/pipelines/chart_deploy.sh redis-backend pro redis

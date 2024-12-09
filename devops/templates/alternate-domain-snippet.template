@@ -1,0 +1,6 @@
+      if ($host = 'www.#{ALTDOMAIN}#' ) {
+        rewrite ^ https://#{DOMAIN}#$request_uri permanent;
+      }
+      if ($host = '#{ALTDOMAIN}#' ) {
+        rewrite ^ https://#{DOMAIN}#$request_uri permanent;
+      }

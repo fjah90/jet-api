@@ -1,0 +1,155 @@
+generic-app:
+  name: iberojet-api-dev
+  deployEnv: dev
+  region: eu-west-1
+
+  hpa:
+    minReplicas: 2
+    maxReplicas: 5
+    cpuRercentage: 70
+
+  revisionHistoryLimit: 1
+  rollout:
+    canary:
+      maxUnavailable: 0
+      steps:
+        - setWeight: 1
+        - pause:
+            duration: 1m
+
+  app:
+    image:
+      registry: 747380230502.dkr.ecr.eu-west-1.amazonaws.com
+      name: ibero-back-euw1-prod
+      tag: '318'
+    livenessProbe:
+      httpGet:
+        path: /ping
+        port: 3000
+        scheme: HTTP
+      timeoutSeconds: 1
+    readinessProbe:
+      httpGet:
+        path: /ping
+        port: 3000
+        scheme: HTTP
+      timeoutSeconds: 1
+    startupProbe:
+      httpGet:
+        path: /ping
+        port: 3000
+        scheme: HTTP
+      failureThreshold: 60
+      periodSeconds: 1
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100M
+      limits:
+        cpu: 800m
+        memory: 800M
+    env:
+      TAG: 'dev'
+      SERVER_PORT: '3000'
+      SERVER_JWT_EXPIRATION_TIME: '2100'
+      BASE_URL: 'https://api.dev.iberojet.eu'
+      TYPEORM_USERNAME: 'templateuser'
+      TYPEORM_DATABASE: 'iberojetdb'
+      TYPEORM_HOST: 'localhost'
+      TYPEORM_PORT: '5432'
+      TYPEORM_SYNCHRONIZE: 'false'
+      TYPEORM_DROP_SCHEMA: 'false'
+      TYPEORM_RUN_MIGRATION: 'true'
+      TYPEORM_LOG: 'false'
+      DB_INIT_DB: 'postgres'
+      DB_ADMIN_MAIL: 'admin@admin.com'
+      DB_ADMIN_HOST_PORT: '8081'
+      DB_ADMIN_GUEST_PORT: '80'
+      IBERO_JET_IMAGE_VERSION: '0.0.1'
+      FIREBASE_AUTHDOMAIN_WEB: 'iberojet-digittal-dev.firebaseapp.com'
+      FIREBASE_PROJECTID_WEB: 'iberojet-digittal-dev'
+      FIREBASE_STORAGEBUCKET_WEB: 'iberojet-digittal-dev.appspot.com'
+      FIREBASE_MESSAGINGSENDERID_WEB: '156022916841'
+      FIREBASE_APPID_WEB: '1:156022916841:web:08ede0cc0e0336b7465278'
+      FIREBASE_DATABASEURL_WEB: 'https://iberojet-c560a-default-rtdb.firebaseio.com'
+      FIREBASE_MEASUREMENT_ID_WEB: 'G-8PG46C9MBZ'
+      FIREBASE_CLIENTEMAIL: 'firebase-adminsdk-awwt8@iberojet-digittal-dev.iam.gserviceaccount.com'
+      RADIXX_USERNAME: 'MOBAPP_E9_U'
+      MINIMUM_IOS_VERSION: '1.1.0'
+      MINIMUM_ANDROID_VERSION: '1.1.2'
+      MINIMUM_DESIRABLE_IOS_VERSION: '1.1.0'
+      MINIMUM_DESIRABLE_ANDROID_VERSION: '1.1.2'
+      HOME_VIDEO_LINK: 'https://digittal.es/iberojet/home.mp4'
+      PRISMIC_REPO_NAME: 'https://evelop-ezycommerce.cdn.prismic.io/api/v2'
+      TERMS_CONDITIONS: 'CONDICIONES TEST'
+      STATSD_NAMESPACE: 'iberojet'
+      STATSD_HOST: 'prod-eu-west-1-prometheus-prometheus-statsd-exporter.infra-prod'
+      STATSD_PORT: '9125'
+      CACHE_SERVER_HOST: 'master.db-redis-ibero-back-euw1-dev-minimal.e80zgb.euw1.cache.amazonaws.com'
+      CACHE_SERVER_PORT: '6379'
+      CACHE_SERVER_TTL: '600'
+      EPG_URL: 'https://checkout-stg.easypaymentgateway.com'
+      SHOW_SWAGGER: 'true'
+      RADIXX_URL: 'https://eveappuat3.radixxuat.com/EVE'
+      BTN_CHECKIN_TEMPORAL: 'false'
+      BTN_BOARDING_PASS_ENABLED: 'false'
+      BTN_CHECKIN_ENABLED: 'false'
+      RATE_LIMIT_WINDOWS_MS_PER_SECONDS: '1000'
+      RATE_LIMIT_WINDOWS_MAX_PER_SECONDS: '800000'
+      RATE_LIMIT_WINDOWS_MS_PER_MINUTES: '60000'
+      RATE_LIMIT_WINDOWS_MAX_PER_MINUTES: '1200000'
+      RATE_LIMIT_WINDOWS_MS_PER_HOURS: '3600000'
+      RATE_LIMIT_WINDOWS_MAX_PER_HOURS: '8000000'
+      MERCHANT_ID: '10478'
+      PRODUCT_ID: '104780001'
+      OPERATION_TYPE: 'DEBIT'
+      PAYMENT_SOLUTION: 'creditcards'
+      CHANNEL: 'MOBILE'
+      CHANNEL_WEB: 'WEB'
+      ALLOWED_PAYMENT_IP: '34.98.116.22,35.246.248.42,35.189.207.233'
+      SENTRY_DNS: 'https://8f7c6a3cc6eb4ccd8730ab98c0dd5561@o4505438095802368.ingest.sentry.io/4505438254071808'
+      RADIXX_GO_API_DOMAIN: 'api-staging.radixxgo.com'
+      RADIXX_GO_API_VERSION: '1.8'
+      RADIXX_GO_API_USERNAME: 'eomobileapiuser'
+      SERVICING: 'false'
+
+  service:
+    create: true
+    grpc: false
+    type: ClusterIP
+    port: 3000
+    targetPort: 3000
+
+  ingress:
+    create: true
+    grpc: false
+    annotations:
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        more_set_headers "X-Robots-Tag: noindex, nofollow, nosnippet, noarchive";
+    hosts:
+      - host: api.dev.iberojet.eu
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+          - api.dev.iberojet.eu
+
+  sealedSecrets:
+    enabled: true
+    type: Opaque
+    annotations:
+      helm.sh/hook-weight: '-5'
+      sealedsecrets.bitnami.com/cluster-wide: 'true'
+    encryptedData:
+      CACHE_SERVER_PASSWORD: AgB2NFiFFbpa9XU0LNd+tHMeINXRykbxHPSAs7xYE4AHrwCPHnZ44PK/IXf1ozZqsDgkvMQeMv+YJp94+Gib4bF2NGuzqF2BGec566L3wghwRYiIR2Gdw383FxiTk2cviafbD76fWPk7MLfsDDvIk5D5h44yKUE3x6m+mO94SsKhAwhLaE2yjJIjtKw/juspVTbaysPf7chrNUbSnFxeLlQ2NIatsZEfrod8iCBcIDzg3+cLyV60J43oDZQID0aqVj5Lg7az52TXGJftLa8Oa1VFpEQ1FU4ZIyolw0aKGjo07lPrIxERcqv4yseKjD5dnbyDsyOl+KSSyqseBUINYjzAI0H3h6wwY9kBc3YlWoMVv25OOWIDHphK8jOgYZHANSZEoFRjKXMm8UGEVPuu22fNfCKgZHN/nLe2fWo7NOkNphKga/hA/duh7tLIJa1UBu4R2CXDbu+zBh15zoyUiv/wsbqzy4GsgLZwnP8jFgVNs9Idb+ydFYwwURXh0vWXrUSrLbtuH99kn+xugijiWh+CtdwMfwx+3P+2MW+63v6SaZmUEFpjiEqBfr/1EFJwTC+cT9VyoUZjHFCnipEkdieDpbcBcS2DOtWKYyIThKbxAkumEoLYKKnae55r/lM/XPcPYX0TWCgp192q7fb4gMevBJFX2vkVbOQnTRbjzpkQoci5nMaClPJ05lm46/hT9paiVkb5FbiawPsNACpbwfnGR+5h8g==
+      DB_ADMIN_PASS: AgAZ6k9pn0QA2iys84uCRPCnjHSx+8LHokA8r8RJQB9izyVFBW00GEjuy+iWUuySorumhW6byzLVq7R4J4GHy8WVEiw3rU6rVHF2ud3EEj8durL3rHIgihAouQhC+M0VMhjouaVtYr5nDND1QudhCPXWPeRHjlLqOssEc3uyS2CyCBSh6ylv4sAiKSjTm+3/A9F/r94cLBT0RO/21CLMSA9o9D4NQ0a3+Qvitz6WsGS1xWzBCmVrQFaHNICU2SVnAJIsuGYaHZk35Jvytc/CE8WcC5PNPY+CrN2nojpFrBWMfjHOKFTHut5SsNiIKUXqlMNVHVCH8CPfjwiOhzFSssTh0OfAuO9KiUZvsJLeHWUxOU2GwO6jNe+lU8cR/s5jC9Nww01XWzsqZ2H699iBBNUnJzrT6dxPcmirjNHhcmQdPerliMOwYpPfDGOEpoeQiOu99xhrDT6xe0ecEdLGt5SJHv8mInWJgOmsmqWCieY9N406WRLWBawanGJzxmNq+zEbl8gzTf6zsfoKQRkb3gcBWNAdEWjO3I6F4ynBMSZTJR+//xe01n3+l86RrjZv/iS21BJpHpuemUfeKgx9fhFqJ/1PkZ/LbKFvnUXd/klUUlgidYc7iNDUMKJg3chfINmOXvOhGBwOjntNG8ZoJP1CX48yXSfG6su0KI0GerQguUIDuYhtf+IfdIvBeQ74Kawlpy4cPg==
+      EPG_MERCHANT_PASSWORD: AgBPLrx9avHZEfritMPwuPCwnBS0sr0Xc8h1zA6018cCdgt4QrakDKcUzZ6dcnK3yaFNjhyEzK4TOPQec8EOFmFGRtTgO7p0VjhXSTtiMgLso6B5mH5v6N6cgKUwXqjIyOlqvOHecIwC/IQGd3hPhieQpS6Sax2ClHSxz9X9SloJX5uXyi4U/tjDqSerjUCsl90wCE5bGX7dauRNKMYIyn3yboyfR7XvRzRfmOjPXoULdkx5KUOxIWDJDsBUHKH0eCvtejdcyG69tYY71S/MK9roflE3Ja9ZCSqSZDorR/ZiUkTNTelfCDGWCmn2UvufAwe3cRI1oPitAjmeWHxm+USyOIG9t2KKuJCWW6gylMHf+m8KhGfKpQWj6XZopZRkFGTQmEIk6AczPnfm8AhXJwX9EhaGkRQiliZuma2Oo9syA5f0NtygShjVCcXHoWcNUDClD7VSrLq833qs9rgECEQE3MHZF6LTAHQo5j9qtRZQOhEQyMwk+xDFdHb1vt+7JScr31Kwlk4RChXn94mPqHPn5M9B3olQia00LQvlH0pzn2xWy1L6esBkOHKv4cWEdTjq2V76LEA/FlnpxfWoKeU0EY+yjCmBkEkA9loFTAXJYBh6IGbgvPxuOfh/BAoYc5o1p3bXztSACqH3gf4IIkZoe+5Mh3dkKbvEbJtCIf7khUyMeh+2OXcdVf9Boodec6NtfZ7zcbUdoGSDDz0bwsfVr56DU/enH1CYtA/J2PMdFg==
+      FIREBASE_APIKEY_WEB: AgAjs/DIMqRKCwAE4p6o1h01XV5mHlTXPi6GFAPNtqPuFT+dmHOh04A3Wlt8sm6kwl9nxWYH196U2Pv6oH+L109APfqW4jbjRMNi/581qrdZO9jZw50v7RLDD4rEtOO+Zy/c7Yd/j+u1K4Pn9ejO4d+/kzMR9LdV1PDiVEh60QDXqhMLSb9OIPoN4fQtszccfHoJ6E6YMjo7vctziQI8vxdDoripawBojytfH6IHW04Ys+RmU0EWne9tgsSeBnh8xhh3wrylyJbIHzPQUsP1qQ4WaxhGiC1deaYpswcnT4hB2QKdu3PZ1tVFAYsKVaI2Oeiy7q7SdjqrS90SyBAjdNFVPeSVxFiuJZhO/HbC6VBx1mwxYkP6e/TK3PR6THpikmN0ce9SSwOmn+djd2LDg6COAJfQfPKE6Lkqhwkg9D/pagH1FXWbKnv66ByPbv+hHLvLioRStXicgFYTfcpkKnlRJx9QHbmc5Dupsnck/jCemE8JGhSseDHhN9Vku+CXcxoDj7Lea/+AkTezo7UkjAk5CXtLp5TAi6bM+Pj0LX5MAfRQf0JqfSMsD9U0OoahfpUpiB9sSgO7buTneMxDE+UlrYa7vcb1ii4pokYyhmnugaJuudteqLkuFblu16TRu3INHAbW8g0G2nmbUhfMd/V6Kz961T/Oj1cbtURFdJL6qeH/OimyUe3CeudI8geoEWheF9R2SClQUW1JZgAyVdniKt3DU9de37GHHAhuPPwNmWPs9bKNnjA=
+      FIREBASE_PRIVATEKEY: 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 
+      PRISMIC_ACCESS_TOKEN: AgB6vJeeetZn0I0iNOUmtMCJF9rssUk0tCXdTnGSf7GiA1YiHvFhnfK311OeG9wZQgJcfzRAc6JkA4Sem66Y513uZ0/sT39F+CplFXR6LmiuICLc4Dwu7BNo6W3sgpzapJ3BtOt7pK2XfYpjwsbgUWSWDlW72zZYuZ+xJ66v6IWeR821SvLTGXVGrKjPSi7HQWnWNHWDb0CJOvL9JmwrSuZcOH9bdlAcakUt+Zg6MBnu2RVFF7xqJSlN8ioZJ88ymXHTKMJLl4ThibyKzxK0ThbKAePNTsGlm77zNe8yB/5QtwX9VsKeYvNWO5E1FLgA4zm+tp+qZz4xD7MlG5vT1skq4So6++YjyIWDbfNqnbz/ZIJWeP+H66WSdt0eFXV5SSQvYRejuPP/gmNsopkb8qZN9qzHHs3t+nWe/ZTp1r+6HvuL0/9TZ5eTOXkI9U0jLTGMEdjKZ6kcRpvCFwl6sULEcGEsujh9SHMBNWftQFap3lhRHQTy39B/ILyBG5eSHLOCuL6t2oqCCHPpqW8UVjapb/1Dz7VIqQnKe+PvMNpROQBVJhWMKbvwHcgkzquCRo17K0WcwaUmSRDR0uzm2PDZlRlp1iBxtVIcl8B06Iho9RuEc73THISIEXJoTkSdw7R0QmgtpADgGIOFVUxzUcMLOrBXg+stPMxyiypIUAWZhMojPSXBLoA5LP5Q8C+DWdPeK+JDjkp0Mo5vtjQep9fPk2mes6FPZiC3IDe7HO78ml0SJNFDnx+M2OgRZ7Xju8Y4Iu3tRTE2dp1aT/T38BQUYfIgBcqeCPtcFIjUfSToK1GfQw+redsMy/OvN8OxVrH27clFdsxd1EtOc6IJDIuvCBscVu6Pvw==
+      RADIXX_PASSWORD: AgAC86lScDAEHwm5j38iV9YrT3qlZT1VUBCiyij55n6mJSRjwO5iGhgdUPNuCsAsRmaxKE/+4k+q0snz8KrzKzcDbiDtWZJ1yubSGe7TMXU3gAvlopqZrMbg9rDbHa6HcWG9Y6iPlYp5QVkLkYrDTreIL2j0gBXzCSoWRqCBMHlkYPZz//JMxy5J/p/6b87GIvo+vI1gt43mCOeqEKCqXdNuViw/C4kPIUz6r0MGEyibs/T+r7fF4UhQYMBzKw06R+TGHvJAlI2L2IFYUZHp95n72kzKAf9U1I7q5VV/lJKWJfoeLxloHgycpAM1a8vBbgl8kavPqDKSQ8naWaKM7YEMECfnBoV7dHr518oTR4bqd8l08IISvjO5fk3yQJXSFDY/Gc6Mw3s21UIUSsrxOyvps45U+av8saB/3wIrJp4t4Ew7glcE8f4OntELWPfp9MD4oPtKMeLDHN7e3IZ7NXPRF8gnhDu15LDJzu9tL7oNvgjl7zFXSAzTEm2ZqswIWvekW78DCu5+0ouiaQHmt4aip5jSXQ4oU4kCdPXVnNd3GmkZL4QSq4j0mxx8+pkyPAke9ZJGmO3dEMXQJwzMRvCYvqCCHu8zZvZnBqo+8QsTizeQrBQrgsL4Fw8C0C3mNkHOBpVf3N4OJ9nMkvJ5kU/rdmcwOXEiKFHdm7g+6QE6FWlVWOtogQ3q5ayaDhm67vaUe4b+RzRIhl+w
+      SERVER_JWT_SECRET: AgDAMPAdPL8TwtO5bzEijKntDPDOJSwwsrjzXXQHZgi2z61DtssQUKZ8teYFN9ACqf8ghWuSqZ49hkFKcx7se6x+d8zmsacj0Bm8IoELvfPlM9+Fi36Yr0WMAIQS6wXIRjnsQAeXCqBppSb37Shnetb/IG2MeVy/eNdcp1QWTlPuDdVFJ+Wo6vyGmvQa7/VDWP6TJBuxQN5qViC9KDvtD+RkcnHpNjLojmNyQI4tdSx8cRZgi5EjpKR16IHAPS0qLPMkjD1ZdaBYERC24teDL7l3gR8Qu76Bp2hqaykeldzndmelPr4/mrGfCddmgYzj3c35z6tkCEl1dtwS+2Gzy1FaTV7dL5XGvAJglg5MktgTowtcUhnR6Qzj8kujvDYsqKQqVPFQReuVaapApIzpVnjAyJajuFk/nOLHzv13743Ow5dEk+wFncZX/55no+cAP9SEGnARq0TeCoKL3wIW8YHh7sMQLSRyIwfMVqfjSgpsbOVar+UVQOKnSmB5WtluZBipYI+/HvJzi8vE1FmIbZ0ldBVqf3sLuUSi4Q2igHu+y1s0sUyIRIgaqDEnu5IP/0wWGiGIZBJPWYDLGV0H1KErzL8I/ZJpKyy0wXXMgfpDcqbMLi3PkncfEkJljarfN/B1Hsmnk0vYmPa7KiPVUuyIgCPpauj4DXpBPmnz5mmi4vL3c8mQR0ClwWgEAIXSAZqu5IhF4etwl1eU
+      TYPEORM_PASSWORD: AgAL2MtURGdyzNkEN17KFKEtJ4BV9jeXh7Z49pA08PlqDXI4JMeV1q8s89/yGjLZIbbVbiGnxycTuw5WLdwk4BJpX9Uu6capeLkayMMR1h1JbJw5m8pef84b5xB2/e/ckfDCZzrR3/MSLi1wdSuW2c6L/ysQbO0B3zDcghl/Sc2d3vMzvlRpnEjM/C+/b9YKK6tefHCqqhldXhVWUWpOItp78w/OQN8/GIPwV6iaXt6v+R7xdXLJoxznqM9wz+qJkUGmm3EN7u7dbVAJMlUqEB7UQEZA8q0/ZtAZjhF2PstCwfUeo8AtwksuhmRBNqhvcgvowkzNhgA5Mh57239Af2S87bb/eSa1t0iJuRh9pX5/7OJ1RfUn1CC26J90kGlkFL74/ZMAF8kkL16dxGhsxu+/jj/IX03Gt7UzPFLDiM21qPmiY2HyqHdHYTSvNYok0PBU41d8X/awh3nFd9ERxL9IRMbnlsdY51zGh9JyWJTWLKJnxCk+XXliPkPFsSJXZ2CAgQlUIzLkMg+qYwY0kUbbqRXHZcQ6twGaDl+OdH+3unQajaQCN6szny6V/6LC5wb1B9tN+hvBC9Yjfqg4jLQxZSnDWHwx8Logez1ACvEzie3l/tI9188qBRF/qhVb+A6UmDOy6jSFQV8bSMbzL+VJ9EpZdjKlcqXl4Lxywni8406ZXo3HL6Nn2sjmiCrOoeJGC9c3RCY1rHzwpVhvNj0=
+      RADIXX_GO_API_KEY: AgC7ZdQQf3U6yxZbiJ0iouciKou20P3SOFxcH2P0Y3Uj3JiLSDPmiOET/DYe8LAl7cjs35tb8dlZZFMpNEUk+5N3iqarI38J5+sKa2WYZjdqahpeyLEjJ4ty9mfK2fFbh5ssoaAXZJ9TPRtxXs+0ZgCXAOCkYnPtP+5MVRZNX0ef2tpzZVcc1ULEIZvUxIWCUTDrPKYQwlBw24vBvLilIerTJJ3ZTooa6cSJBSFIW0+WA3b4p+TXXxY6mO+U2YW5cpcrii25awha2jmPw+jOR3XARFDKnbFnvj2uDhBg4J4bky+7THUsZX2/6PtTqndj18LlD17ltEZ2PQk3LbQaWQ8+0vul9GqbWLsYNEnaAvhWmAycHpLhJ+HvSqOCQ/04S87IAq5VXog4TzT1QStBr5gpGkTLGNVntV49Xweyw2Frm8anb664DJAB58DU+XT5v+qainj0kROFIFWtO9aonRhgODU8oxvO0y7/9llPOMdwW336gZMHI1DHAJJpf189sIQU2Qv3T/tUDS60sGrR2fsw6LxIVCFeLf1htsl3eyBU8q2b6qPnmVfhSimKf1Aen9/0jewq8e0LGYqv47AhB6bvm03qInd2jpJ/a6+P/CH5DtcKkJoAdeerdMHppNQn4x7o3a4mUxFz1hZgux1mjr5xXk7gMJxbM9ije1yEyE3Z4o3EmTYVGIUpXDOjgbsa1ACW67alUk1rux4Qrpg5zyn8ZnLNyqYEFHUkH6xMRsfdGnGhz2L/Gzu/
+      RADIXX_GO_API_PASSWORD: AgA3pxATd+X2K/hETGgTGWaXmzn/bpL7Il/HOtGifBW2x3dE1NBOCdKqHqOL+ZwsEuV3EXirz2Wq6DWYu65zej25x/3eU9WrDmRnGqfTIfYWiF6t1IrPcAxa7wBhPch/RJz68ML6fwAvuXbvdkYzkwI57AegyqVOH8XBIpKnMMleW1VWwaYwlaAdKJr/mvZFSEx4oIf/Ach3aQH+6BanvAj6ivcnJPcHLe+q/TYpSPncXreFymGyctZhcvxV4ajceI/kQES/tE3fjLckimIa3ZKE+NbMZIzgJQIX8UuEYBMYtowi/k5vp1G6uo6SA0Zz6Mh83IpvZYEzzbbC3nbhSc60AAtv58ZeBGo7fxxum8G85nLDvf4CA1Ykftk0TB1iS3tbyc74wav1gK/CVsXV8rEPmoAWostV5ZxJW8kYqttIXWswpZ/OaSDBXqhHLpr1gBvOmfoHPGkUdTfTc9IzvtYxJSHM9yIzJMKMeu2vy7aHd25Wyk5+Lo6y13//cIJkh55EqfPHHZu9JaBX+Bmq99FbFvElBZd3RbbFsgZLliBZF4wzii2URSpYB6kqFpM3nYVMhnmkFR/rAP24HBjDqHdBY4DWBn2BqMgyMKZgA6EzGeAqoqES6GRsP1oNbl/kTVJkGAG1DSLREAnM6KduKIiCfJF9tvltuWxBTPfug8+YZ9olP253dBoTdu31+d1QDuAkM9Zo7eUjqcpuK2CgCB3T

@@ -1,0 +1,52 @@
+version: '3.7'
+services:
+  ibero-jet-db:
+    image: postgres:12.4
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_INIT_DB}
+      POSTGRES_USER: ${TYPEORM_USERNAME}
+      POSTGRES_PASSWORD: ${TYPEORM_PASSWORD}
+    ports:
+      - ${TYPEORM_PORT}:${TYPEORM_PORT}
+    volumes:
+      - ibero-jet-db-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+  ibero-jet-grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - '3005:3000'
+  ibero-jet-dbadmin:
+    image: dpage/pgadmin4:4.25
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${DB_ADMIN_MAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${DB_ADMIN_PASS}
+      PGADMIN_LISTEN_PORT: ${DB_ADMIN_GUEST_PORT}
+    ports:
+      - ${DB_ADMIN_HOST_PORT}:${DB_ADMIN_GUEST_PORT}
+    volumes:
+      - ibero-jet-dbadmin-data:/var/lib/pgadmin
+    depends_on:
+      - ibero-jet-db
+  app:
+    image: dockerregistrytbd/ibero-jet:${IBERO_JET_IMAGE_VERSION}
+    expose:
+      - '80'
+    ports:
+      - '80:3000'
+    depends_on:
+      - ibero-jet-db
+  redis:
+    container_name: cache
+    image: redis:alpine3.18
+    ports:
+      - 6379:6379
+    volumes:
+      - redis:/data
+volumes:
+  ibero-jet-db-data:
+  ibero-jet-dbadmin-data:
+  redis:
+    driver: local

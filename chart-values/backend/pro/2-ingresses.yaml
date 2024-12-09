@@ -1,0 +1,27 @@
+ingressPublic:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Robots-Tag: noindex, nofollow, nosnippet, noarchive";
+    nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+  hosts:
+    - host: "backend-iberojet.ingress-public.ocppro.aws-pro.avoristravel.io"
+      paths: [ "/" ]
+  ingressClass: nginx-public
+
+ingressPublicAdvanced:
+  - name: api-iberojet-eu
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-http
+      kubernetes.io/tls-acme: 'true'
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        more_set_headers "X-Robots-Tag: noindex, nofollow, nosnippet, noarchive";
+      nginx.ingress.kubernetes.io/ssl-redirect: 'true'
+    hosts:
+      - host: "api.iberojet.eu"
+        paths: [ "/" ]
+    ingressClass: nginx-public
+    tls:
+      - hosts:
+          - "api.iberojet.eu"
+        customSecretName: tls-api-iberojet-eu

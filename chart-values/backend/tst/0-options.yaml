@@ -1,0 +1,20 @@
+replicaCount: 1
+
+## healthchecks
+livenessProbe:
+  path: /ping
+readinessProbe:
+  path: /ping
+startupProbe:
+  path: /ping
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 600Mi
+  requests:
+    cpu: 50m
+    memory: 400Mi
+
+service:
+  port: 3000

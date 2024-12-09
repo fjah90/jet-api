@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: #{NAME}#-#{ENV}#
+  namespace: #{NAME}#-#{ENV}#
+  labels:
+    site: #{NAME}#-#{ENV}#
+spec:
+  strategy:
+    type: RollingUpdate
+  replicas: 2
+  selector:
+    matchLabels:
+      app: #{NAME}#-#{ENV}#
+  template:
+    metadata:
+      name: #{NAME}#-#{ENV}#
+      labels:
+        app: #{NAME}#-#{ENV}#
+        site: #{NAME}#-#{ENV}#
+    spec:
+      containers:
+        - name: #{NAME}#-#{ENV}#
+          image: #{IMAGE}#
+          ports:
+            - name: app
+              containerPort: 3000
+          resources:
+            limits:
+              memory: "#{MEM_LIMIT}#"
+              cpu: "#{CPU_LIMIT}#"
+            requests:
+              memory: "#{MEM_REQUEST}#"
+              cpu: "#{CPU_REQUEST}#"
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "/app/post-start.sh"]
+            preStop:
+              exec:
+                command: [ "sleep","90" ]
+#      terminationGracePeriodSeconds: 101
+          # readinessProbe:
+          #   httpGet:
+          #     path: /api/health
+          #     port: app
+          # livenessProbe:
+          #   httpGet:
+          #     path: /api/health
+          #     port: app
+          #   initialDelaySeconds: 20
+          envFrom:
+            - configMapRef:
+                name: app-config
+            - secretRef:
+                name: app-secrets
+          env:
+            - name: ENV
+              value: #{ENV}#
+      imagePullSecrets:
+        - name: axterdev
+---
