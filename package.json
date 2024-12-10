@@ -70,6 +70,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "^7.6.0",
+    "@instana/collector": "^4.2.0",
     "@liaoliaots/nestjs-redis": "^9.0.5",
     "@nestjs/cache-manager": "^2.0.1",
     "@nestjs/common": "^9.3.2",

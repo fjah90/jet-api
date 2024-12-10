@@ -12,6 +12,8 @@ import { HttpExceptionFilter } from './config/http-exception-filter';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 
+require('@instana/collector')();
+
 CrudConfigService.load(CrudConfiguration);
 
 const xmlParser = require('express-xml-bodyparser');
