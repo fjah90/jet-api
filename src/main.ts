@@ -11,8 +11,8 @@ import * as Sentry from '@sentry/node';
 import { HttpExceptionFilter } from './config/http-exception-filter';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import instana from'@instana/collector';
 
-require('@instana/collector')();
 
 CrudConfigService.load(CrudConfiguration);
 
@@ -26,6 +26,7 @@ async function bootstrap() {
     rawBody: true,
   });
 
+  instana
   app.set('trust proxy', 1);
 
   // Values in miliseconds
@@ -54,6 +55,7 @@ async function bootstrap() {
       xXssProtection: false,
     })
   );
+  
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
@@ -68,6 +70,9 @@ async function bootstrap() {
     if (req.url.includes('/payments/webhook') && req.headers['content-type'].includes('xml')) {
       return xmlParserMidleware(req, res, next);
     }
+    const span = instana.currentSpan();
+    console.log(span)
+    console.log(span.getTraceId)
     next();
   });
 
